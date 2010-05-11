@@ -14,6 +14,10 @@ module.shared = true;
  */
 function Request(env) {
 
+    if (env["ringo.request"]) {
+        return env["ringo.request"];
+    }
+
     var params, cookies, session, headers;
     var servletRequest = env["jsgi.servlet_request"];
 
@@ -111,7 +115,7 @@ function Request(env) {
                     });
                 }
             }
-            return cookies;
+                return cookies;
         }
     });
 
@@ -198,6 +202,8 @@ function Request(env) {
             }
         }
     });
+    
+    env["ringo.request"] = this;
 }
 
 /**
