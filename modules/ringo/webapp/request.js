@@ -97,7 +97,7 @@ function Request(request) {
                     });
                 }
             }
-                return cookies;
+            return cookies;
         }
     });
 
