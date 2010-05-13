@@ -30,6 +30,7 @@ public class Stream extends ScriptableObject implements Wrapper {
 
     private InputStream input;
     private OutputStream output;
+    private boolean closed = false;
 
     private final static String CLASSNAME = "Stream";
 
@@ -176,6 +177,20 @@ public class Stream extends ScriptableObject implements Wrapper {
     }
 
     @JSFunction
+    public int skip(int num) {
+        try {
+            if (input != null) {
+                return (int) input.skip(num);
+            } else {
+                throw Context.reportRuntimeError(
+                        "skip() invoked on non-readable Stream");
+            }
+        } catch (IOException iox) {
+            throw new WrappedException(iox);
+        }
+    }
+
+    @JSFunction
     public void close() {
         try {
             if (output != null) {
@@ -184,9 +199,15 @@ public class Stream extends ScriptableObject implements Wrapper {
             if (input != null) {
                 input.close();
             }
+            closed = true;
         } catch (IOException iox) {
             throw new WrappedException(iox);
         }
+    }
+
+    @JSFunction
+    public boolean closed() {
+        return closed;
     }
 
     @JSFunction("unwrap")
