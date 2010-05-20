@@ -8,8 +8,6 @@ var {createTempFile} = require('ringo/fileutils');
 var {open} = require('fs');
 var {MemoryStream} = require('io');
 
-module.shared = true;
-
 export('isFileUpload', 'parseFileUpload', 'BufferFactory', 'TempFileFactory');
 
 var log = require('ringo/logging').getLogger(module.id);
@@ -159,7 +157,7 @@ function parseFileUpload(request, params, encoding, streamFactory) {
 /**
  * A stream factory that stores file upload in a memory buffer. This
  * function is not meant to be called directly but to be passed as streamFactory
- * argument to [parseFileUpload()][parseFileUpload].
+ * argument to [parseFileUpload()](#parseFileUpload).
  *
  * The buffer is stored in the `value` property of the parameter's data object.
  */
@@ -183,7 +181,7 @@ function BufferFactory(data, encoding) {
 /**
  * A stream factory that stores file uploads in temporary files. This
  * function is not meant to be called directly but to be passed as streamFactory
- * argument to [parseFileUpload()][parseFileUpload].
+ * argument to [parseFileUpload()](#parseFileUpload).
  *
  * The name of the temporary file is stored in the `tempfile` property
  * of the parameter's data object.

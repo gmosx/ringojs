@@ -18,8 +18,6 @@ export('getConfig',
 
 var log = require('ringo/logging').getLogger(module.id);
 
-module.shared = true;
-
 /**
  * Handler function called by the JSGI servlet.
  *
@@ -264,6 +262,8 @@ function main(path) {
     daemon.start();
 }
 
-if (require.main == module) {
+var started; // protect against restarting on reload
+if (require.main == module && !started) {
     main();
+    started = true;
 }
