@@ -20,6 +20,16 @@ exports.testMacro = function () {
     assertEqual('before HERE after', render(skin, context));
 };
 
+exports.testNestedMacro = function () {
+    var skin = createSkin('<% echo <% foo %> %>');
+
+    assertEqual('a', render(skin, {foo: 'a'}));
+
+    // ensure that rendering a skin (with nested macros) multiple times in
+    // differing contexts works as expected.
+    assertEqual('b', render(skin, {foo: 'b'}));
+};
+
 exports.testFilter = function () {
     var skin = createSkin('before <% x | filter %> after');
     var context = {filter_filter: function (str) 'HERE'};
@@ -65,6 +75,92 @@ exports.testExternalSubskin = function () {
 
     skin = createSkin(getResource('./skins/foo.html'));
     assertEqual('foo\nbar\nbaz\n', render(skin));
+};
+
+// --- builtins ---
+
+exports.testIfBuiltin = function () {
+    var skin = createSkin('<% if <% x %> render tt %>' +
+                          '<% if not <% x %> render ff %>' +
+                          '\n<% x %>' +
+                          '<% subskin tt %>tt' +
+                          '<% subskin ff %>ff');
+
+    assertEqual('tt\ntrue',     render(skin, {x: true}).trim());
+    assertEqual('tt\n42',       render(skin, {x: 42}).trim());
+    assertEqual('tt',           render(skin, {x: []}).trim());
+
+    assertEqual('ff\nfalse',    render(skin, {x: false}).trim());
+    assertEqual('ff',           render(skin, {x: null}).trim());
+    assertEqual('ff',           render(skin, {}).trim());
+};
+
+exports.testForBuiltinBasic = function () {
+    var skin;
+
+    skin = createSkin('<% for x in <% xs %> render item %>' +
+                      '<% subskin item %><% x %>,');
+    assertEqual('foo,bar,baz,', render(skin, {xs: ['foo', 'bar', 'baz']}));
+    assertEqual('',             render(skin, {xs: []}));
+
+    skin = createSkin('<% for x in ["Foo", "Bar", "Baz"] render item %>' +
+                      '<% subskin item %><% x %>');
+    assertEqual('FooBarBaz',    render(skin));
+
+    skin = createSkin('<% for x in [Foo, Bar, Baz] render item %>' +
+                      '<% subskin item %><% x %>');
+    assertEqual('FooBarBaz',    render(skin));
+};
+
+exports.testForBuiltinSeparator = function () {
+    var skin = createSkin('<% for x in <% xs %> separator=: render item %>' +
+                          '<% subskin item %><% x %>');
+    assertEqual('foo:bar:baz',  render(skin, {xs: ['foo', 'bar', 'baz']}));
+    assertEqual('foo',          render(skin, {xs: ['foo']}));
+    assertEqual('',             render(skin, {xs: []}));
+};
+
+exports.testForBuiltinWrap = function () {
+    var skin = createSkin('<% for x in <% xs %> wrap=[A,Z] render item %>' +
+                          '<% subskin item %><% x %>');
+    assertEqual('AaZAbZAcZ',    render(skin, {xs: ['a', 'b', 'c']}));
+    assertEqual('AaZ',          render(skin, {xs: ['a']}));
+    assertEqual('',             render(skin, {xs: []}));
+};
+
+exports.testForBuiltinIndex = function () {
+    var skin = createSkin('<% for x in <% xs %> render item %>' +
+                          '<% subskin item %><% index %>');
+    assertEqual('012',          render(skin, {xs: ['a', 'b', 'c']}));
+    assertEqual('0',            render(skin, {xs: ['a']}));
+    assertEqual('',             render(skin, {xs: []}));
+};
+
+exports.testForBuiltinNestedFor = function () {
+    var skin;
+
+    skin = createSkin('<% for x in <% xs %> and y in <% ys %> render item %>' +
+                      '<% subskin item %>(<% x %><% y %>)');
+    assertEqual('(14)(15)(24)(25)', render(skin, {xs: [1, 2], ys: [4, 5]}));
+
+    skin = createSkin('<% for x in <% xs %> for y in <% ys %> render item %>' +
+                      '<% subskin item %>(<% x %><% y %>)');
+    assertEqual('(14)(15)(24)(25)', render(skin, {xs: [1, 2], ys: [4, 5]}));
+};
+
+exports.testSetBuiltin = function () {
+    var skin;
+
+    skin = createSkin('<% set {x: "foo"} render item %>' +
+                      '<% subskin item %><% x %>');
+    assertEqual('foo', render(skin));
+    assertEqual('foo', render(skin, {x: 'bar'}));
+
+    skin = createSkin('<% render item %>' +
+                      '<% set {x: "Override"} render item %>' +
+                      '<% render item %>' +
+                      '<% subskin item %><% x %>');
+    assertEqual('OriginalOverrideOriginal', render(skin, {x: 'Original'}));
 };
 
 // --- filters ---
