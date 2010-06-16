@@ -124,6 +124,7 @@ Cookie.PATTERN = /([^=;]+)=?([^;]*)(?:;\s*|$)/g;
 /**
  * An Exchange encapsulates the Request and Response of an HTTP Exchange.
  * @constructor
+ * @name Exchange
  */
 var Exchange = function(url, options, callbacks) {
     if (!url) throw new Error('missing url argument');
@@ -142,41 +143,73 @@ var Exchange = function(url, options, callbacks) {
     };
     
     Object.defineProperties(this, {
+        /**
+         * The response status code
+         * @name Exchange.instance.status
+         */
         status: {
             get: function() {
                 return exchange.getResponseStatus();
             }
         },
+        /**
+         * The response content type
+         * @name Exchange.instance.contentType
+         */
         contentType: {
             get: function() {
                 return responseFields.getStringField('Content-Type');
             }
         },
+        /**
+         * The response body as String
+         * @name Exchange.instance.content
+         */
         content: {
             get: function() {
                 return exchange.getResponseContent();
             }
         },
+        /**
+         * The response body as ByteString
+         * @name Exchange.instance.contentBytes
+         */
         contentBytes: {
             get: function() {
                 return ByteString.wrap(exchange.getResponseContentBytes());
             }
         },
+        /**
+         * @name Exchange.instance.contentChunk
+         */
         contentChunk: {
             get: function() {
                 return exchange.getRequestContentChunk();
             }
         },
+        /**
+         * The Jetty ContentExchange object
+         * @see http://download.eclipse.org/jetty/7.0.2.v20100331/apidocs/org/eclipse/jetty/client/ContentExchange.html
+         * @name Exchange.instance.contentExchange
+         */
         contentExchange: {
             get: function() {
                 return exchange;
             }
         },
+        /**
+         * The response headers
+         * @name Exchange.instance.responseHeaders
+         */
         responseHeaders: {
             get: function() {
                 return responseFields;
             }
         },
+        /**
+         * The cookies set by the server
+         * @name Exchange.instance.cookies
+         */
         cookies: {
             get: function() {
                 var cookies = {};
@@ -189,14 +222,37 @@ var Exchange = function(url, options, callbacks) {
             }
         },
         /**
-         * return response encoding
-         * NOTE HttpExchange._encoding knows about this but is protected
+         * The response encoding
+         * @name Exchange.instance.encoding
          */
         encoding: {
+            // NOTE HttpExchange._encoding knows about this but is protected
             get: function() {
                 return getMimeParameter(this.contentType, "charset") || 'utf-8';
             }
         },
+        /**
+         * True if the request has completed, false otherwise
+         * @name Exchange.instance.done
+         */
+        done: {
+            get: function() {
+                return exchange.isDone();
+            }
+        },
+        /**
+         * Waits for the request to complete and returns the Exchange object itself.
+         * This method returns immediately if the request has already completed.
+         * Otherwise, it will block the current thread until completion.
+         * @returns the Exchange object
+         * @name Exchange.instance.wait
+         */
+        wait: {
+            value: function() {
+                exchange.waitForDone();
+                return this;
+            }
+        }
     });
 
     /**
@@ -626,7 +682,10 @@ var defaultClient = defaultClient || new Client();
  * @returns {Exchange} exchange object
  * @see Client.instance.request
  */
-var request = defaultClient.request;
+var request = function() {
+    return defaultClient.request.apply(defaultClient, arguments);
+};
+
 /**
  * Convenience function to make a POST request without creating a new client.
  * @param {String} url the url to request
@@ -636,7 +695,10 @@ var request = defaultClient.request;
  * @returns {Exchange} exchange object
  * @see Client.instance.request
  */
-var post = defaultClient.post;
+var post = function() {
+    return defaultClient.post.apply(defaultClient, arguments);
+};
+
 /**
  * Convenience function to make a GET request without creating a new client.
  * @param {String} url the url to request
@@ -646,7 +708,10 @@ var post = defaultClient.post;
  * @returns {Exchange} exchange object
  * @see Client.instance.request
  */
-var get = defaultClient.get;
+var get = function() {
+    return defaultClient.get.apply(defaultClient, arguments);
+};
+
 /**
  * Convenience function to make a DELETE request without creating a new client.
  * @param {String} url the url to request
@@ -656,7 +721,9 @@ var get = defaultClient.get;
  * @returns {Exchange} exchange object
  * @see Client.instance.request
  */
-var del = defaultClient.del;
+var del = function() {
+    return defaultClient.del.apply(defaultClient, arguments);
+};
 
 /**
  * Convenience function to make a PUT request without creating a new client.
@@ -667,6 +734,8 @@ var del = defaultClient.del;
  * @returns {Exchange} exchange object
  * @see Client.instance.request
  */
-var put = defaultClient.put;
+var put = function() {
+    return defaultClient.put.apply(defaultClient, arguments);
+};
 
 

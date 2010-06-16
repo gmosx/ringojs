@@ -49,7 +49,7 @@ function initRequest(request) {
     Object.defineProperty(request, "input", {
         get: function() {
             if (!input)
-                input = new Stream(request.env.servlet_request.getInputStream());
+                input = new Stream(request.env.servletRequest.getInputStream());
             return input;
         }
     });
@@ -69,8 +69,8 @@ function initRequest(request) {
  */
 function commitResponse(req, result) {
     var {status, headers, body} = result;
-    var request = req.env.servlet_request;
-    var response = req.env.servlet_response;
+    var request = req.env.servletRequest;
+    var response = req.env.servletResponse;
     if (!status || !headers || !body) {
         // As a convenient shorthand, we also handle async responses returning the
         // not only the promise but the full deferred (as obtained by
@@ -88,7 +88,13 @@ function commitResponse(req, result) {
     }
     response.setStatus(status);
     for (var key in headers) {
-        headers[key].split("\n").forEach(function(value) {
+        var values = headers[key];
+        if (typeof values === "string") {
+            values = values.split("\n");
+        } else if (!Array.isArray(values)) {
+            continue;
+        }
+        values.forEach(function(value) {
             response.addHeader(key, value);
         });
     }
@@ -104,12 +110,12 @@ function writeBody(response, body, charset) {
                 part = part.toByteString(charset);
             }
             output.write(part);
-            output.flush();
         };
         body.forEach(writer);
         if (typeof body.close == "function") {
             body.close(writer);
         }
+        output.close();
     } else {
         throw new Error("Response body doesn't implement forEach: " + body);
     }
