@@ -1,5 +1,3 @@
-
-include("ringo/unittest");
 var {join} = require("fs");
 
 importPackage(org.ringojs.repository);
@@ -9,5 +7,5 @@ var repo = new ZipRepository(path);
 require("./common").setup(exports, path, repo);
 
 if (require.main == module.id) {
-    require("ringo/unittest").run(exports);
+    require("test").run(exports);
 }
