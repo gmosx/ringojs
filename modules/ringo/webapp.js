@@ -78,11 +78,11 @@ function resolveInConfig(req, webenv, config, configId) {
             var module = getModule(moduleId);
             log.debug("Resolved module: {} -> {}", moduleId, module);
             // move matching path fragment from PATH_INFO to SCRIPT_NAME
-            appendToScriptName(req, match[0]);
+            var remainingPath = getRemainingPath(req, match[0]);
             // prepare action arguments, adding regexp capture groups if any
             var args = [req].concat(match.slice(1));
             // lookup action in module
-            var action = getAction(req, module, urlEntry, args);
+            var action = getAction(req, module, urlEntry, remainingPath, args);
             // log.debug("got action: " + action);
             if (typeof action == "function") {
                 var res = action.apply(module, args);
@@ -91,6 +91,7 @@ function resolveInConfig(req, webenv, config, configId) {
                 }
                 return res;
             } else if (Array.isArray(module.urls)) {
+                shiftPath(req, remainingPath);
                 return resolveInConfig(req, webenv, module, moduleId);
             }
         }
@@ -126,8 +127,8 @@ function getModule(moduleId) {
     return moduleId;
 }
 
-function getAction(req, module, urlconf, args) {
-    var path = splitPath(req.pathInfo);
+function getAction(req, module, urlconf, remainingPath, args) {
+    var path = splitPath(remainingPath);
     var action;
     // if url-conf has a hard-coded action name use it
     var name = urlconf[2];
@@ -148,7 +149,8 @@ function getAction(req, module, urlconf, args) {
                     // If the request path contains additional elements check whether the
                     // candidate function has formal arguments to take them
                     if (path.length <= 1 || args.length + path.length - 1 <= action.length) {
-                        appendToScriptName(req, name);
+                        shiftPath(req, remainingPath);
+                        shiftPath(req, getRemainingPath(req, name));
                         Array.prototype.push.apply(args, path.slice(1));
                         return action;
                     }
@@ -170,7 +172,8 @@ function getAction(req, module, urlconf, args) {
             Array.prototype.splice.apply(args, spliceArgs);
         }
         if (path.length == 0 || args.length + path.length <= action.length) {
-            if (path.length == 0 && args.slice(1).join('').length == 0) {
+            shiftPath(req, remainingPath);
+            if (path.length == 0 && args.slice(1).join("").length == 0) {
                 checkTrailingSlash(req);
             }
             Array.prototype.push.apply(args, path);
@@ -189,16 +192,18 @@ function checkTrailingSlash(req) {
     }
 }
 
-function appendToScriptName(req, fragment) {
+function getRemainingPath(req, fragment) {
     var path = req.pathInfo;
     var pos = path.indexOf(fragment);
-    if (pos > -1) {
-        pos += fragment.length;
-        // add matching pattern to script-name
-        req.scriptName += path.substring(0, pos);
-        // ... and remove it from path-info
-        req.pathInfo = path.substring(pos);
-    }
+    return  (pos > -1) ? path.substring(pos + fragment.length) : path;
+}
+
+function shiftPath(req, remainingPath) {
+    var path = req.pathInfo;
+    // add matching pattern to script-name
+    req.scriptName += path.substring(0, path.length - remainingPath.length);
+    // ... and remove it from path-info    
+    req.pathInfo = remainingPath;
 }
 
 function splitPath(path) {
