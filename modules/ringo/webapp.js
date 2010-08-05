@@ -3,12 +3,13 @@
  */
 
 // import modules
-var STRING = require('ringo/utils/string');
+var strings = require('ringo/utils/strings');
 var {Request} = require('ringo/webapp/request');
 var {Response, redirectResponse} = require('ringo/webapp/response');
 var system = require('system');
 var fileutils = require('ringo/fileutils');
 var daemon = require('ringo/webapp/daemon');
+var webenv = require('ringo/webapp/env');
 
 export('getConfig',
        'handleRequest',
@@ -29,19 +30,15 @@ function handleRequest(req) {
         log.debug('got config', config);
     }
 
-    // set req in webapp env module
-    var webenv = require('ringo/webapp/env');
     req = Request(req);
-    var res = null;
-    webenv.setRequest(req);
-
     req.charset = config.charset || 'utf8';
-
     // URI-decode path-info
     req.pathInfo = decodeURI(req.pathInfo);
+    // set current request in webapp env module
+    webenv.setRequest(req);
 
     try {
-        return resolveInConfig(req, webenv, config, configId);
+        return resolveInConfig(req, config, configId);
     } catch (e if e.redirect) {
         return redirectResponse(e.redirect);
     } finally {
@@ -49,7 +46,7 @@ function handleRequest(req) {
     }
 }
 
-function resolveInConfig(req, webenv, config, configId) {
+function resolveInConfig(req, config, configId) {
     log.debug('resolving path {}', req.pathInfo);
     // set rootPath to the root context path on which this app is mounted
     // in the request object and config module, appPath to the path within the app.
@@ -91,7 +88,7 @@ function resolveInConfig(req, webenv, config, configId) {
                 return res;
             } else if (Array.isArray(module.urls)) {
                 shiftPath(req, remainingPath);
-                return resolveInConfig(req, webenv, module, moduleId);
+                return resolveInConfig(req, module, moduleId);
             }
         }
     }
@@ -184,7 +181,7 @@ function getAction(req, module, urlconf, remainingPath, args) {
 
 function checkTrailingSlash(req) {
     // only redirect for GET requests
-    if (!STRING.endsWith(req.path, "/") && req.isGet) {
+    if (!strings.endsWith(req.path, "/") && req.isGet) {
         var path = req.queryString ?
                 req.path + "/?" + req.queryString : req.path + "/";
         throw {redirect: path};
