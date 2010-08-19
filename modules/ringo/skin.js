@@ -68,6 +68,7 @@ function createSkin(resourceOrString) {
     var currentSkin = mainSkin;
     var parentSkin = null;
     var eng = engine.getRhinoEngine();
+
     var parser = new org.ringojs.template.SkinParser({
         renderText: function(text) {
             currentSkin[currentSkin.length] = text;
@@ -88,7 +89,13 @@ function createSkin(resourceOrString) {
             }
         }
     });
-    parser.parse(resourceOrString);
+    if (resourceOrString instanceof org.ringojs.repository.Resource) {
+        var config = webenv.getConfig(),
+            charset = config && config.charset || 'utf8';
+        parser.parse(resourceOrString, charset);
+    } else {
+        parser.parse(resourceOrString);
+    }
     // normalization: cut trailing whitespace so it's
     // easier to tell if main skin should be inherited
     var lastPart = mainSkin[mainSkin.length - 1];
