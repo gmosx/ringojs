@@ -1,5 +1,8 @@
+/**
+ * @fileOverview Middleware to catch errors and generate simple error pages.
+ */
 var strings = require('ringo/utils/strings');
-var Response = require('ringo/webapp/response').Response;
+var {Response} = require('ringo/webapp/response');
 var engine = require('ringo/engine');
 var log = require('ringo/logging').getLogger(module.id);
 var Buffer = require('ringo/buffer').Buffer;
@@ -33,7 +36,7 @@ function handleError(request, error) {
     }
     if (error.stack) {
         res.writeln('<h3>Script Stack</h3>');
-        res.writeln('<pre>', error.stack, '</pre>');        
+        res.writeln('<pre>', error.stack, '</pre>');
     }
     if (error.rhinoException) {
         res.writeln('<h3>Java Stack</h3>');
@@ -44,7 +47,7 @@ function handleError(request, error) {
     }    
     res.writeln('</body></html>');
     log.error(error);
-    return res.close();
+    return res;
 }
 
 function renderSyntaxError(error) {

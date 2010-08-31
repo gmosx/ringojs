@@ -1,8 +1,10 @@
-
-var Response = require('ringo/webapp/response').Response;
+/**
+ * @fileOverview Middleware for simple Not-Found pages.
+ */
+var {Response} = require('ringo/webapp/response');
 
 /**
- * Standard 404 page
+ * Middleware for simple 404-Not-Found pages.
  */
 exports.middleware = function(app) {
     return function(request) {
@@ -18,7 +20,7 @@ exports.middleware = function(app) {
             var path = request.scriptName + request.pathInfo;
             res.writeln('<p>The requested URL', path, 'was not found on the server.</p>');
             res.writeln('</body></html>');
-            return res.close();
+            return res;
         }
     };
 };
